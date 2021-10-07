@@ -1,0 +1,3 @@
+[submodule "beymax"]
+	path = beymax
+	url = git@github.com:agraubert/Beymax.git

@@ -5,6 +5,9 @@ from datetime import datetime
 from abc import ABC, abstractmethod
 import csv
 from contextlib import ExitStack
+from .db import Database
+from pymysql import IntegrityError
+import os
 
 TIMESTAMP_FORMAT = "%m/%d/%Y - %H:%M:%S"
 
@@ -107,6 +110,31 @@ class STDOutStream(AbstractOutputStream):
     def write(self, data):
         print(data['author_username'], '--', data['subreddit_name'], '@', data['created_time'], ':', data['comment_text'])
 
+class MYSQLStream(AbstractOutputStream):
+    def __init__(self, url, **kwargs):
+        self.db = Database(url, **kwargs)
+        self.inserts = 0
+
+    def __enter__(self):
+        self.db.__enter__()
+        return self
+
+    def __exit__(self, exc_type, exc_val, tb):
+        self.db.__exit__(exc_type, exc_val, tb)
+
+    def write(self, data):
+        if isinstance(data['created_time'], str):
+            data['created_time'] = datetime.strptime(data['created_time'], TIMESTAMP_FORMAT)
+        if isinstance(data['comment_score_last_updated'], str):
+            data['comment_score_last_updated'] = datetime.strptime(data['comment_score_last_updated'], TIMESTAMP_FORMAT)
+        if isinstance(data['post_score_last_updated'], str):
+            data['post_score_last_updated'] = datetime.strptime(data['post_score_last_updated'], TIMESTAMP_FORMAT)
+        if not len(self.db.query(self.db['comments'].select.where(self.db['comments'].c.comment_id == data['comment_id']))):
+            self.db.insert('comments', **data)
+        self.inserts += 1
+        if self.inserts % 25 == 0:
+            self.db.commit()
+
 class DuplicateStream(AbstractOutputStream):
     def __init__(self, *streams):
         self.streams = streams
@@ -146,7 +174,7 @@ async def main_test(*subreddits, **authorization):
         print("Invalid credentials")
         raise
 
-    with DuplicateStream(STDOutStream(), TSVStream('test.tsv')) as writer:
+    with DuplicateStream(STDOutStream(), MYSQLStream(os.environ['VIBE_DB'], tables=['comments'])) as writer:
         try:
             async for comment in stream_comments(reddit, *subreddits):
                 await writer.consume(comment)

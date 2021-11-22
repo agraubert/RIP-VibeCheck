@@ -3,3 +3,4 @@ aiostream
 pymysql
 sqlalchemy
 pandas
+aiohttp

@@ -8,8 +8,13 @@ from contextlib import ExitStack
 from .db import Database
 from pymysql import IntegrityError
 import os
+from .redditsearch import SearchRange
 
 TIMESTAMP_FORMAT = "%m/%d/%Y - %H:%M:%S"
+
+def safe_getattr(obj, attr):
+    if obj is not None and hasattr(obj, attr):
+        return getattr(obj, attr)
 
 async def lazy_fetch_atribute(obj, attribute):
     try:
@@ -29,29 +34,32 @@ class AbstractOutputStream(ABC):
 
     async def extract_data(self, comment):
         author = comment.author
-        await author.load()
+        if author is not None:
+            await author.load()
         sub = comment.subreddit
-        await sub.load()
+        if sub is not None:
+            await sub.load()
         post = comment.submission
-        await post.load()
+        if post is not None:
+            await post.load()
         parent_id = comment.parent_id
         is_top_level = parent_id.startswith('t3_')
         now = datetime.now().strftime(TIMESTAMP_FORMAT)
         return {
-            'comment_id': comment.id,
-            'permalink': comment.permalink,
+            'comment_id': safe_getattr(comment, 'id'),
+            'permalink': safe_getattr(comment, 'permalink'),
             'created_time': datetime.fromtimestamp(comment.created).strftime(TIMESTAMP_FORMAT),
-            'author_username': author.name,
-            'author_id': author.id,
-            'comment_text': comment.body,
-            'comment_score': comment.score,
+            'author_username': safe_getattr(author, 'name'),
+            'author_id': safe_getattr(author, 'id'),
+            'comment_text': safe_getattr(comment, 'body'),
+            'comment_score': safe_getattr(comment, 'score'),
             'comment_score_last_updated': now,
-            'subreddit_name': sub.display_name,
-            'subreddit_id': sub.id,
-            'post_permalink': post.permalink,
-            'post_title': post.title,
-            'post_id': post.id,
-            'post_score': post.score,
+            'subreddit_name': safe_getattr(sub, 'display_name'),
+            'subreddit_id': safe_getattr(sub, 'id'),
+            'post_permalink': safe_getattr(post, 'permalink'),
+            'post_title': safe_getattr(post, 'title'),
+            'post_id': safe_getattr(post, 'id'),
+            'post_score': safe_getattr(post, 'score'),
             'post_score_last_updated': now,
             'is_top_level': is_top_level,
             'parent_id': parent_id,
@@ -166,6 +174,16 @@ async def stream_comments(reddit, *subreddits):
         async for comment in source:
             yield comment
 
+async def stream_historical_comments(reddit, start, stop, *subreddits):
+    ranges = [
+        SearchRange(sub, start, stop).query(reddit) for sub in subreddits
+    ]
+    print("there are", len(ranges), "query ranges")
+    multistream = stream.merge(*ranges)
+    async with multistream.stream() as source:
+        async for comment in source:
+            yield comment
+
 async def main_test(*subreddits, **authorization):
     reddit = asyncpraw.Reddit(**authorization)
     try:
@@ -180,3 +198,25 @@ async def main_test(*subreddits, **authorization):
                 await writer.consume(comment)
         finally:
             await reddit.close()
+
+async def history_test(*subreddits, **authorization):
+    start = datetime.strptime("02/12/2018 - 06:23:02", TIMESTAMP_FORMAT).timestamp()
+    stop = datetime.strptime("02/12/2019 - 06:23:02", TIMESTAMP_FORMAT).timestamp()
+
+    reddit = asyncpraw.Reddit(**authorization)
+    try:
+        print("Logged in as", await reddit.user.me())
+    except:
+        print("Invalid credentials")
+        raise
+
+
+    try:
+        with DuplicateStream(STDOutStream(), MYSQLStream(os.environ['VIBE_DB'], tables=['comments'])) as writer:
+            async for comment in stream_historical_comments(reddit, start, stop, *subreddits):
+                await writer.consume(comment)
+    finally:
+        await reddit.close()
+
+def run_coro(coroutine):
+    asyncio.run(coroutine)

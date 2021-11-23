@@ -42,14 +42,13 @@ class SearchRange(object):
                         print(response.real_url)
                         raise ValueError("Bad request")
                     data = await response.json()
-                    print(len(data['data']), 'objects in this response')
+                    metadata = data['metadata']
+                    print("This query:", len(data['data']), '/', metadata['total_results'])
                     for post in data['data']:
                         # Fetch comment and yield to caller
                         yield await reddit.comment(post['id'])
                         # Update search time
                         start = max(start, post['created_utc'])
-                    metadata = data['metadata']
-                    print("This query:", len(data['data']), '/', metadata['total_results'])
                     if metadata['total_results'] < 1 or len(data['data']) >= metadata['total_results']:
                         return
                     await asyncio.sleep(2)

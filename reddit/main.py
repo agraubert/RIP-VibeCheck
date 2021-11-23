@@ -199,9 +199,7 @@ async def main_test(*subreddits, **authorization):
         finally:
             await reddit.close()
 
-async def history_test(*subreddits, **authorization):
-    start = datetime.strptime("02/12/2018 - 06:23:02", TIMESTAMP_FORMAT).timestamp()
-    stop = datetime.strptime("02/12/2019 - 06:23:02", TIMESTAMP_FORMAT).timestamp()
+async def history_test(*subreddits, start, stop, **authorization):
 
     reddit = asyncpraw.Reddit(**authorization)
     try:

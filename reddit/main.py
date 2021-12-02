@@ -9,6 +9,7 @@ from .db import Database
 from pymysql import IntegrityError
 import os
 from .redditsearch import SearchRange
+import sqlalchemy as sqla
 
 TIMESTAMP_FORMAT = "%m/%d/%Y - %H:%M:%S"
 
@@ -218,6 +219,43 @@ async def history_test( start, stop, *subreddits, **authorization):
                 await writer.consume(comment)
     finally:
         await reddit.close()
+
+
+async def update_comment_scores(**authorization):
+    reddit = asyncpraw.Reddit(**authorization)
+    while True:
+        with Database(os.environ['VIBE_DB'], tables=['comments']) as db:
+            count = db.query(
+                sqla.select(
+                    sqla.func.count(db['comments'])
+                ).select_from(db['comments'].table)
+            )['count_1'][0]
+        for idx in range(0, count, 1000): # Chunk database in 1000's
+            await asyncio.sleep(2)
+            with Database(os.environ['VIBE_DB'], tables=['comments']) as db:
+                chunk = db.query(
+                    db['comments'].select.order_by(sqla.asc(db['comments'].c.created_time)).limit(1000).offset(idx)
+                )
+            for _, row in chunk.iterrows():
+                try:
+                    comment = await reddit.comment(row['comment_id'])
+                    await comment.refresh()
+                    post = comment.submission
+                    if post is not None:
+                        await post.load()
+                    now = datetime.now().strftime(TIMESTAMP_FORMAT)
+                    db.execute(
+                        db['comments'].update.where(
+                            db['comments'].c.comment_id == row['comment_id']
+                        ).values(
+                            comment_score=safe_getattr(comment, 'score'),
+                            post_score=safe_getattr(post, 'score'),
+                            comment_score_last_updated=now,
+                            post_score_last_updated=now
+                        )
+                    )
+                except:
+                    print("Failed to update comment", row['comment_id'])
 
 def run_coro(coroutine):
     asyncio.run(coroutine)

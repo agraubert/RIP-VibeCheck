@@ -1,7 +1,6 @@
 # Clustering Algorithms for Label Correction 
 
 # This notebook contains the code to load and initialize all the clustering algorithms with the proper hyperparameters set.
-
 import numpy as np
 import pandas as pd
 
@@ -27,7 +26,7 @@ import time
 from scipy import sparse
 from scipy.linalg import orth
 from scipy.optimize import linear_sum_assignment
-from sklearn.metrics.cluster import supervised
+from sklearn.metrics.cluster import _supervised as supervised
 from sklearn import cluster
 from sklearn.base import BaseEstimator, ClusterMixin
 from sklearn.decomposition import sparse_encode
@@ -42,8 +41,13 @@ from sklearn import cluster
 from sklearn.metrics import normalized_mutual_info_score, adjusted_rand_score
 from sklearn.preprocessing import normalize
 
-features = pd.read_csv('features.csv', delimiter=',') # load the features after creating them
-labels = pd.read_csv("../data/combined-set.csv")["is_suicide"]
+# Added by Sean to support Gaussian Mixtures
+from sklearn.datasets import make_blobs
+from sklearn.mixture import GaussianMixture
+
+# features = pd.read_csv('features.csv', delimiter=',') # load the features after creating them
+features = pd.read_csv('./run/guse-training-features.csv', delimiter=',') # use the BERT training features created during word embedding
+labels = pd.read_csv("./data/combined-set.csv")["is_suicide"]
 
 # Dimensionality-Reduction Algorithms
  
@@ -801,3 +805,9 @@ model_spectral = cluster.SpectralClustering(n_clusters=2,affinity='nearest_neigh
 # no dimensionality reduction is required for Subspace clustering
 model_spectral.fit(features)
 predictions = model_spectral.labels_
+
+# np.savetxt("predictions_temp.csv", predictions, delimiter=',')
+# np.savetxt("probs_temp.csv", probs[:, 1], delimiter=',')
+
+df = pd.DataFrame({"predictions" : predictions, "probs" : probs[:, 1]})
+df.to_csv("./run/prediction_labels.csv", index=False)

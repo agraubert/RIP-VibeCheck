@@ -5,7 +5,6 @@
 import numpy as np
 import pandas as pd
 
-import os
 import torch
 import transformers as ppb
 import tensorflow as tf
@@ -24,14 +23,13 @@ from sklearn.naive_bayes import MultinomialNB
 # run 'pip install tensorflow==1.15'
 # run 'pip install "tensorflow_hub>=0.6.0"'
 # run 'pip3 install tensorflow_text==1.15'
-content_path = os.getcwd() + '/content/module_useT'
 
 #download the model to local so it can be used again and again
-get_ipython().system('mkdir ' + content_path)
+get_ipython().system('mkdir /content/module_useT')
 # Download the module, and uncompress it to the destination folder. 
-get_ipython().system('curl -L "https://tfhub.dev/google/universal-sentence-encoder-large/3?tf-hub-format=compressed" | tar -zxvC ' + content_path)
+get_ipython().system('curl -L "https://tfhub.dev/google/universal-sentence-encoder-large/3?tf-hub-format=compressed" | tar -zxvC /content/module_useT')
 
-embed = hub.Module(content_path)
+embed = hub.Module("/content/module_useT")
 
 # define the GUSE transformer
 def encodeData(messages): 
@@ -84,7 +82,7 @@ def getFeatures(batch_1):
   with torch.no_grad():
       last_hidden_states = model(input_ids, attention_mask=attention_mask)
 
-  # features = last_hidden_states[0][:,0,:].numpy() # use this line if you want the 2D BERT features
+  features = last_hidden_states[0][:,0,:].numpy() # use this line if you want the 2D BERT features
   # features = last_hidden_states[0].numpy() # use this line if you want the 3D BERT features 
 
   return features

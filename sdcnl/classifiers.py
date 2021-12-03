@@ -9,24 +9,21 @@ import pickle
 import tensorflow
 from tensorflow import keras
 from tensorflow.keras import layers
-from keras.callbacks import ModelCheckpoint
+from tensorflow.keras.callbacks import ModelCheckpoint
 
-from keras.models import Sequential
+from tensorflow.keras.models import Sequential
 
 from tensorflow.keras.layers import Dense, Activation, Embedding, Flatten, MaxPooling1D, Dropout, Conv1D, Input, LSTM, SpatialDropout1D, Bidirectional
 
 # train_features = pd.read_csv('train_features.csv', delimiter=',') # load the features after creating them
 # test_feautres = pd.read_csv('test_features.csv', delimiter=',') # load the features after creating them
 
-train_labels = pd.read_csv('./run/prediction_corrections.csv', delimiter=',')["final_label"] # load the features after creating them
-# with open('./run/bert_3d.pkl', 'rb') as r:
-#     train_features = pickle.load(r)
+# train_features = pd.read_csv('./run/bert-training-features.csv', delimiter=',', header=None) # load the features after creating them
+import pickle
+import argparse
 
-# test_feautres = pd.read_csv('./run/bert-training-features.csv', delimiter=',') # load the features after creating them
 
-train_features = pd.read_csv('./run/guse-training-features.csv')
-# train_labels = pd.read_csv("./data/training-set.csv")["is_suicide"]
-# test_labels = pd.read_csv("./data/testing-set.csv")["is_suicide"]
+
 
 # training hyperparameters
 
@@ -63,14 +60,47 @@ batch_size = 32
 # train_features = train_features.astype('float32')
 # train_labels = train_labels.astype('float32')
 
-# print("Feature shape: ", train_features.shape)
-# print("Training labels head: ", train_labels.head())
 
-# cnn.fit(x=train_features, y=train_labels, epochs=epochs, batch_size=batch_size, callbacks=mc)
 
-# cnn.summary()
 
-# cnn.save('model_cnn')
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser('SDCNL-classifier')
+    parser.add_argument('input', help="Original input csv containing is_suicide labels to train")
+    parser.add_argument('embeddings', help="Clustered embeddings pickle to train model")
+    parser.add_argument('-m', '--model', help='Output model name', default='model.h5')
+    parser.add_argument('-l', '--label-column', help="Column in label table. Defaults to 'is_suicide'", default='is_suicide')
+
+    args = parser.parse_args()
+
+    # with open(args.embeddings, 'rb') as r:
+    #     train_features = pickle.load(r)
+
+    train_features = pd.read_csv(args.intput)
+
+    train_labels = pd.read_csv(args.input)[args.label_column]
+
+    dense = Sequential()
+
+    dense_path = "./run/model_dense"
+
+    dense = Sequential()
+    dense.add(Input(shape=(512,)))
+    dense.add(Dense(128, activation='relu', kernel_initializer='he_uniform'))
+    dense.add(Dense(64, activation='relu', kernel_initializer='he_uniform'))
+    dense.add(Dense(1, activation='sigmoid'))
+
+    dense.compile(optimizer='adam',
+                  loss='binary_crossentropy',
+                  metrics=['accuracy'])
+
+    mc = ModelCheckpoint(dense_path + ".h5", monitor='val_accuracy', mode='max', verbose=1, save_best_only=True)
+
+    dense.fit(x=train_features, y=train_labels, epochs=epochs, batch_size=batch_size, callbacks=mc)
+
+    dense.summary()
+
+    dense.save('./run/model_dense')
+
 
 # predictions = cnn.predict(x=train_features, batch_size=batch_size, callbacks=mc)
 
@@ -80,27 +110,7 @@ batch_size = 32
 
 
 # # Fully Dense Network
-dense = Sequential()
 
-dense_path = "./run/model_dense"
-
-dense = Sequential()
-dense.add(Input(shape=(512,)))
-dense.add(Dense(128, activation='relu', kernel_initializer='he_uniform'))
-dense.add(Dense(64, activation='relu', kernel_initializer='he_uniform'))
-dense.add(Dense(1, activation='sigmoid'))
-
-dense.compile(optimizer='adam',
-              loss='binary_crossentropy',
-              metrics=['accuracy'])
-
-mc = ModelCheckpoint(dense_path + ".h5", monitor='val_accuracy', mode='max', verbose=1, save_best_only=True)
-
-dense.fit(x=train_features, y=train_labels, epochs=epochs, batch_size=batch_size, callbacks=mc)
-
-dense.summary()
-
-dense.save('./run/model_dense')
 
 # # Bi-LSTM
 # bilstm = Sequential()

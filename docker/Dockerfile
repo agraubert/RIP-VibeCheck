@@ -52,3 +52,4 @@ RUN . rootenv/bin/activate && pip install \
 RUN mkdir -p /content/module_useT
 RUN git clone https://github.com/ayaanzhaque/SDCNL.git
 RUN echo ". /rootenv/bin/activate" > /root/.bashrc && chmod 755 /root/.bashrc
+COPY sdcnl/*.py SDCNL

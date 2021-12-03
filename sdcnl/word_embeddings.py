@@ -1,6 +1,6 @@
-# Transformers Notebook 
+# Transformers Notebook
 
-# This notebook contains the implementation of our BERT and Google Universal Sentence Encoder (GUSE) transformers. 
+# This notebook contains the implementation of our BERT and Google Universal Sentence Encoder (GUSE) transformers.
 
 import numpy as np
 import pandas as pd
@@ -17,6 +17,10 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import GridSearchCV
 from sklearn.model_selection import cross_val_score
 from sklearn.naive_bayes import MultinomialNB
+import argparse
+import os
+import pickle
+import subprocess
 
 
 # Google Universal Sentence Encoder (GUSE) Transformer
@@ -26,16 +30,22 @@ from sklearn.naive_bayes import MultinomialNB
 # run 'pip install "tensorflow_hub>=0.6.0"'
 # run 'pip3 install tensorflow_text==1.15'
 
-#download the model to local so it can be used again and again
-get_ipython().system('mkdir /content/module_useT')
-# Download the module, and uncompress it to the destination folder. 
-get_ipython().system('curl -L "https://tfhub.dev/google/universal-sentence-encoder-large/3?tf-hub-format=compressed" | tar -zxvC /content/module_useT')
+def getEmbedModule():
+    if not os.path.isdir('/content/module_useT'):
+        os.makedirs('/content/module_useT')
+    if not len(os.listdir('/content/module_useT')):
+        subprocess.check_call(
+            'curl -L "https://tfhub.dev/google/universal-sentence-encoder-large/3?tf-hub-format=compressed" | tar -zxvC /content/module_useT',
+            shell='/bin/bash'
+        )
+    return hub.Module('/content/module_useT')
 
-embed = hub.Module("/content/module_useT")
+
 
 # define the GUSE transformer
-def encodeData(messages): 
+def encodeData(messages):
   # Reduce logging output.
+  embed = getEmbedModule()
   tf.logging.set_verbosity(tf.logging.ERROR)
   with tf.Session() as session:
       session.run([tf.global_variables_initializer(), tf.tables_initializer()])
@@ -70,7 +80,7 @@ model = model_class.from_pretrained(pretrained_weights)
 # Look at the below comments to determine whether you want to output the 2-dimensional or 3-dimensional BERT features.
 def getFeatures(batch_1):
 
-  tokenized = batch_1[0].apply((lambda x: tokenizer.encode(x, add_special_tokens=True, truncation=True, max_length=512)))
+  tokenized = batch_1.apply((lambda x: tokenizer.encode(x, add_special_tokens=True, truncation=True, max_length=512)))
 
   max_len = 0
   for i in tokenized.values:
@@ -84,23 +94,26 @@ def getFeatures(batch_1):
   attention_mask.shape
 
 
-  input_ids = torch.tensor(padded)  
+  input_ids = torch.tensor(padded)
   attention_mask = torch.tensor(attention_mask)
 
   with torch.no_grad():
       last_hidden_states = model(input_ids, attention_mask=attention_mask)
 
   # features = last_hidden_states[0][:,0,:].numpy() # use this line if you want the 2D BERT features
-  features = last_hidden_states[0].numpy() # use this line if you want the 3D BERT features 
+  features = last_hidden_states[0].numpy() # use this line if you want the 3D BERT features
 
   return features
 
-df = pd.read_csv('./data/training-set.csv', delimiter=',')
-df = df[['selftext', 'is_suicide']]
-df = df.rename(columns={'selftext': 0, 'is_suicide': 1})
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser('SDCNL-embeddings')
+    parser.add_argument('input', help="Input csv file containing 'selftext' column")
+    parser.add_argument('output', help="output pickle file")
 
-bert_features = getFeatures(df)
-# print("Bert shape: ", bert_features.shape)
-# np.savetxt("bert-3d-training-features.csv", bert_features, delimiter=',')
-with open('./run/bert_3d.pkl', 'wb') as w:
-    pickle.dump(bert_features, w)
+    # print("Bert shape: ", bert_features.shape)
+    # np.savetxt("bert-3d-training-features.csv", bert_features, delimiter=',')
+
+    args = parser.parse_args()
+
+    with open(args.output, 'wb') as w:
+        pickle.dump(encodeData(pd.read_csv(args.input)['selftext']), w)

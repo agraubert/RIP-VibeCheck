@@ -75,7 +75,7 @@ if __name__ == '__main__':
     # with open(args.embeddings, 'rb') as r:
     #     train_features = pickle.load(r)
 
-    train_features = pd.read_csv(args.intput)
+    train_features = pd.read_csv(args.embeddings, index_col=0)
 
     train_labels = pd.read_csv(args.input)[args.label_column]
 
@@ -95,11 +95,11 @@ if __name__ == '__main__':
 
     mc = ModelCheckpoint(dense_path + ".h5", monitor='val_accuracy', mode='max', verbose=1, save_best_only=True)
 
-    dense.fit(x=train_features, y=train_labels, epochs=epochs, batch_size=batch_size, callbacks=mc)
+    dense.fit(x=train_features, y=train_labels, epochs=epochs, batch_size=batch_size, callbacks=[mc])
 
     dense.summary()
 
-    dense.save('./run/model_dense')
+    dense.save(args.model)
 
 
 # predictions = cnn.predict(x=train_features, batch_size=batch_size, callbacks=mc)

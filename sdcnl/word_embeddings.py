@@ -58,14 +58,6 @@ def encodeData(messages):
 
 ## These are the two GUSE sets for Aaron
 # transform the text features to word embeddings using GUSE
-training_regular = pd.read_csv('./data/training-set.csv')['selftext']
-new_training_regular = encodeData(training_regular)
-new_training_regular.to_csv('guse-training-features.csv')
-
-training_regular = pd.read_csv('./data/testing-set.csv')['selftext']
-new_training_regular = encodeData(training_regular)
-new_training_regular.to_csv('./run/guse-testing-features.csv')
-
 
 # BERT Transformer
 # install the following
@@ -108,12 +100,11 @@ def getFeatures(batch_1):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser('SDCNL-embeddings')
     parser.add_argument('input', help="Input csv file containing 'selftext' column")
-    parser.add_argument('output', help="output pickle file")
+    parser.add_argument('output', help="output embeddings csv file")
 
     # print("Bert shape: ", bert_features.shape)
     # np.savetxt("bert-3d-training-features.csv", bert_features, delimiter=',')
 
     args = parser.parse_args()
 
-    with open(args.output, 'wb') as w:
-        pickle.dump(encodeData(pd.read_csv(args.input)['selftext']), w)
+    encodeData(pd.read_csv(args.input)['selftext']).to_csv(args.output)

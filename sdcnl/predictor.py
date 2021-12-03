@@ -33,7 +33,7 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    train_features = pd.read_csv(args.input, index_col=0, header=None).iloc[1:]
+    features = pd.read_csv(args.input, index_col=0)
 
 
     model = tf.keras.models.load_model(args.model)

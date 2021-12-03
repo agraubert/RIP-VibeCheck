@@ -46,10 +46,11 @@ RUN . rootenv/bin/activate && pip install \
     wordninja==2.0.0 && pip install \
     spams==2.6.2.5 \
     tensorflow==1.15 \
-    tensorflow_hub>=0.6.0 \
-    tensorflow_text==1.15
+    'tensorflow_hub>=0.6.0' \
+    tensorflow_text==1.15 && pip install h5py==2.10.0
 
 RUN mkdir -p /content/module_useT
 RUN git clone https://github.com/ayaanzhaque/SDCNL.git
-RUN echo ". /rootenv/bin/activate" > /root/.bashrc && chmod 755 /root/.bashrc
+RUN echo ". /rootenv/bin/activate" >> /root/.bashrc && chmod 755 /root/.bashrc
+RUN echo 'alias ll="ls -l"' >> /root/.bashrc && chmod 755 /root/.bashrc
 COPY sdcnl/*.py SDCNL

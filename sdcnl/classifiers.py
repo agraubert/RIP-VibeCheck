@@ -2,6 +2,9 @@
 
 # This notebook contains the implementation of our three deep neural classifiers with correct hyperparameters.
 
+import pandas as pd
+import numpy as np
+
 import tensorflow
 from tensorflow import keras
 from tensorflow.keras import layers
@@ -11,11 +14,19 @@ from keras.models import Sequential
 
 from tensorflow.keras.layers import Dense, Activation, Embedding, Flatten, MaxPooling1D, Dropout, Conv1D, Input, LSTM, SpatialDropout1D, Bidirectional
 
-train_features = pd.read_csv('train_features.csv', delimiter=',') # load the features after creating them
-test_feautres = pd.read_csv('test_features.csv', delimiter=',') # load the features after creating them
+# train_features = pd.read_csv('train_features.csv', delimiter=',') # load the features after creating them
+# test_feautres = pd.read_csv('test_features.csv', delimiter=',') # load the features after creating them
 
-train_labels = pd.read_csv("../data/training-set.csv")["is_suicide"]
-test_labels = pd.read_csv("../data/testing-set.csv")["is_suicide"]
+# train_features = pd.read_csv('./run/bert-training-features.csv', delimiter=',', header=None) # load the features after creating them
+import pickle
+with open('bert_3d.pkl', 'rb') as r:
+    train_features = pickle.load(r)
+
+test_feautres = pd.read_csv('./run/bert-training-features.csv', delimiter=',') # load the features after creating them
+
+train_labels = pd.read_csv("./data/training-set.csv")["is_suicide"]
+# train_labels.pop(0)
+test_labels = pd.read_csv("./data/testing-set.csv")["is_suicide"]
 
 # training hyperparameters
 
@@ -26,7 +37,7 @@ batch_size = 32
 
 cnn = Sequential()
 
-cnn_path = "cnn"
+cnn_path = "/SDCNL/run/cnn"
 
 filters = 3
 kernal = 2
@@ -44,46 +55,65 @@ cnn.compile(optimizer='adam',
 
 mc = ModelCheckpoint(cnn_path + ".h5", monitor='val_accuracy', mode='max', verbose=1, save_best_only=True)
 
+# Added by Sean to train model once layers are created
+# Training feature / label sets are given a dummy dimension to fit model 3-dimensional requirement
+
+# train_features = train_features.values[..., None]
+
+# train_features = train_features.astype('float32')
+# train_labels = train_labels.astype('float32')
+
+print("Feature shape: ", train_features.shape)
+print("Training labels head: ", train_labels.head())
+
+cnn.fit(x=train_features, y=train_labels, epochs=epochs, batch_size=batch_size, callbacks=mc)
+
 cnn.summary()
 
-# Fully Dense Network
-dense = Sequential()
+cnn.save('model')
 
-dense_path = "dense"
+# predictions = cnn.predict(x=train_features, batch_size=batch_size, callbacks=mc)
 
-dense = Sequential()
-dense.add(Input(shape=(512,)))
-dense.add(Dense(128, activation='relu', kernel_initializer='he_uniform'))
-dense.add(Dense(64, activation='relu', kernel_initializer='he_uniform'))
-dense.add(Dense(1, activation='sigmoid'))
+# print(predictions)
 
-dense.compile(optimizer='adam',
-              loss='binary_crossentropy',
-              metrics=['accuracy'])
+# # Fully Dense Network
+# dense = Sequential()
 
-mc = ModelCheckpoint(dense_path + ".h5", monitor='val_accuracy', mode='max', verbose=1, save_best_only=True)
+# dense_path = "dense"
 
-dense.summary()
+# dense = Sequential()
+# dense.add(Input(shape=(512,)))
+# dense.add(Dense(128, activation='relu', kernel_initializer='he_uniform'))
+# dense.add(Dense(64, activation='relu', kernel_initializer='he_uniform'))
+# dense.add(Dense(1, activation='sigmoid'))
 
-# Bi-LSTM
-bilstm = Sequential()
+# dense.compile(optimizer='adam',
+#               loss='binary_crossentropy',
+#               metrics=['accuracy'])
 
-bilstm_path = "bilstm"
+# mc = ModelCheckpoint(dense_path + ".h5", monitor='val_accuracy', mode='max', verbose=1, save_best_only=True)
 
-pool_size = 2
+# dense.summary()
 
-bilstm.add(Input(shape=(512,768)))
-bilstm.add(Bidirectional(LSTM(20, return_sequences=True, dropout=0.25, recurrent_dropout=0.2)))
-bilstm.add(MaxPooling1D(pool_size = pool_size))
-bilstm.add(Flatten())
-bilstm.add(Dense(10, activation='relu', kernel_initializer='he_uniform'))
-bilstm.add(Dense(1, activation='sigmoid'))
+# # Bi-LSTM
+# bilstm = Sequential()
+
+# bilstm_path = "bilstm"
+
+# pool_size = 2
+
+# bilstm.add(Input(shape=(512,768)))
+# bilstm.add(Bidirectional(LSTM(20, return_sequences=True, dropout=0.25, recurrent_dropout=0.2)))
+# bilstm.add(MaxPooling1D(pool_size = pool_size))
+# bilstm.add(Flatten())
+# bilstm.add(Dense(10, activation='relu', kernel_initializer='he_uniform'))
+# bilstm.add(Dense(1, activation='sigmoid'))
 
 
-bilstm.compile(optimizer='adam',
-              loss='binary_crossentropy',
-              metrics=['accuracy'])
+# bilstm.compile(optimizer='adam',
+#               loss='binary_crossentropy',
+#               metrics=['accuracy'])
 
-mc = ModelCheckpoint(bilstm_path + ".h5", monitor='val_accuracy', mode='max', verbose=1, save_best_only=True)
+# mc = ModelCheckpoint(bilstm_path + ".h5", monitor='val_accuracy', mode='max', verbose=1, save_best_only=True)
 
-bilstm.summary()
+# bilstm.summary()

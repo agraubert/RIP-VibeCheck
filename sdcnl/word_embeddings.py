@@ -7,7 +7,8 @@ import pandas as pd
 
 import torch
 import transformers as ppb
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
+tf.disable_v2_behavior()
 import tensorflow_hub as hub
 
 from sklearn.model_selection import train_test_split
@@ -44,7 +45,7 @@ def encodeData(messages):
   return final_embeddings
 
 # transform the text features to word embeddings using GUSE
-training_regular = pd.read_csv('../data/training-set.csv')['selftext']
+training_regular = pd.read_csv('./data/training-set.csv')['selftext']
 new_training_regular = encodeData(training_regular)
 new_training_regular.to_csv('guse-training-features.csv')
 
@@ -82,14 +83,18 @@ def getFeatures(batch_1):
   with torch.no_grad():
       last_hidden_states = model(input_ids, attention_mask=attention_mask)
 
-  features = last_hidden_states[0][:,0,:].numpy() # use this line if you want the 2D BERT features
-  # features = last_hidden_states[0].numpy() # use this line if you want the 3D BERT features 
+  # features = last_hidden_states[0][:,0,:].numpy() # use this line if you want the 2D BERT features
+  features = last_hidden_states[0].numpy() # use this line if you want the 3D BERT features 
 
   return features
 
-df = pd.read_csv('real-training-set.csv', delimiter=',')
+df = pd.read_csv('./data/training-set.csv', delimiter=',')
 df = df[['selftext', 'is_suicide']]
 df = df.rename(columns={'selftext': 0, 'is_suicide': 1})
 
 bert_features = getFeatures(df)
-np.savetxt("bert-training-features.csv", bert_features, delimiter=',')
+print("Bert shape: ", bert_features.shape)
+# np.savetxt("bert-3d-training-features.csv", bert_features, delimiter=',')
+import pickle
+with open('bert_3d.pkl', 'wb') as w:
+    pickle.dump(bert_features, w)

@@ -4,6 +4,7 @@
 
 import pandas as pd
 import numpy as np
+import pickle
 
 import tensorflow
 from tensorflow import keras
@@ -17,16 +18,15 @@ from tensorflow.keras.layers import Dense, Activation, Embedding, Flatten, MaxPo
 # train_features = pd.read_csv('train_features.csv', delimiter=',') # load the features after creating them
 # test_feautres = pd.read_csv('test_features.csv', delimiter=',') # load the features after creating them
 
-# train_features = pd.read_csv('./run/bert-training-features.csv', delimiter=',', header=None) # load the features after creating them
-import pickle
-with open('bert_3d.pkl', 'rb') as r:
-    train_features = pickle.load(r)
+train_labels = pd.read_csv('./run/prediction_corrections.csv', delimiter=',')["final_label"] # load the features after creating them
+# with open('./run/bert_3d.pkl', 'rb') as r:
+#     train_features = pickle.load(r)
 
-test_feautres = pd.read_csv('./run/bert-training-features.csv', delimiter=',') # load the features after creating them
+# test_feautres = pd.read_csv('./run/bert-training-features.csv', delimiter=',') # load the features after creating them
 
-train_labels = pd.read_csv("./data/training-set.csv")["is_suicide"]
-# train_labels.pop(0)
-test_labels = pd.read_csv("./data/testing-set.csv")["is_suicide"]
+train_features = pd.read_csv('./run/guse-training-features.csv')
+# train_labels = pd.read_csv("./data/training-set.csv")["is_suicide"]
+# test_labels = pd.read_csv("./data/testing-set.csv")["is_suicide"]
 
 # training hyperparameters
 
@@ -35,25 +35,25 @@ batch_size = 32
 
 # Convolutional Neural Network
 
-cnn = Sequential()
+# cnn = Sequential()
 
-cnn_path = "/SDCNL/run/cnn"
+# cnn_path = "./run/model_cnn"
 
-filters = 3
-kernal = 2
+# filters = 3
+# kernal = 2
 
-cnn.add(Input(shape=(512,768)))
-cnn.add(Conv1D(filters= filters, kernel_size = kernal, activation='relu'))
-cnn.add(Dropout(0.25))
-cnn.add(Flatten())
-cnn.add(Dense(64, activation='relu', kernel_initializer='he_uniform'))
-cnn.add(Dense(1, activation='sigmoid'))
+# cnn.add(Input(shape=(512,768)))
+# cnn.add(Conv1D(filters= filters, kernel_size = kernal, activation='relu'))
+# cnn.add(Dropout(0.25))
+# cnn.add(Flatten())
+# cnn.add(Dense(64, activation='relu', kernel_initializer='he_uniform'))
+# cnn.add(Dense(1, activation='sigmoid'))
 
-cnn.compile(optimizer='adam',
-              loss='binary_crossentropy',
-              metrics=['accuracy'])
+# cnn.compile(optimizer='adam',
+#               loss='binary_crossentropy',
+#               metrics=['accuracy'])
 
-mc = ModelCheckpoint(cnn_path + ".h5", monitor='val_accuracy', mode='max', verbose=1, save_best_only=True)
+# mc = ModelCheckpoint(cnn_path + ".h5", monitor='val_accuracy', mode='max', verbose=1, save_best_only=True)
 
 # Added by Sean to train model once layers are created
 # Training feature / label sets are given a dummy dimension to fit model 3-dimensional requirement
@@ -63,37 +63,44 @@ mc = ModelCheckpoint(cnn_path + ".h5", monitor='val_accuracy', mode='max', verbo
 # train_features = train_features.astype('float32')
 # train_labels = train_labels.astype('float32')
 
-print("Feature shape: ", train_features.shape)
-print("Training labels head: ", train_labels.head())
+# print("Feature shape: ", train_features.shape)
+# print("Training labels head: ", train_labels.head())
 
-cnn.fit(x=train_features, y=train_labels, epochs=epochs, batch_size=batch_size, callbacks=mc)
+# cnn.fit(x=train_features, y=train_labels, epochs=epochs, batch_size=batch_size, callbacks=mc)
 
-cnn.summary()
+# cnn.summary()
 
-cnn.save('model')
+# cnn.save('model_cnn')
 
 # predictions = cnn.predict(x=train_features, batch_size=batch_size, callbacks=mc)
 
 # print(predictions)
 
+
+
+
 # # Fully Dense Network
-# dense = Sequential()
+dense = Sequential()
 
-# dense_path = "dense"
+dense_path = "./run/model_dense"
 
-# dense = Sequential()
-# dense.add(Input(shape=(512,)))
-# dense.add(Dense(128, activation='relu', kernel_initializer='he_uniform'))
-# dense.add(Dense(64, activation='relu', kernel_initializer='he_uniform'))
-# dense.add(Dense(1, activation='sigmoid'))
+dense = Sequential()
+dense.add(Input(shape=(512,)))
+dense.add(Dense(128, activation='relu', kernel_initializer='he_uniform'))
+dense.add(Dense(64, activation='relu', kernel_initializer='he_uniform'))
+dense.add(Dense(1, activation='sigmoid'))
 
-# dense.compile(optimizer='adam',
-#               loss='binary_crossentropy',
-#               metrics=['accuracy'])
+dense.compile(optimizer='adam',
+              loss='binary_crossentropy',
+              metrics=['accuracy'])
 
-# mc = ModelCheckpoint(dense_path + ".h5", monitor='val_accuracy', mode='max', verbose=1, save_best_only=True)
+mc = ModelCheckpoint(dense_path + ".h5", monitor='val_accuracy', mode='max', verbose=1, save_best_only=True)
 
-# dense.summary()
+dense.fit(x=train_features, y=train_labels, epochs=epochs, batch_size=batch_size, callbacks=mc)
+
+dense.summary()
+
+dense.save('./run/model_dense')
 
 # # Bi-LSTM
 # bilstm = Sequential()

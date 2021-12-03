@@ -3,6 +3,7 @@
 # This notebook contains the code to load and initialize all the clustering algorithms with the proper hyperparameters set.
 import numpy as np
 import pandas as pd
+import pickle
 
 from sklearn.cluster import KMeans
 from sklearn.decomposition import PCA
@@ -47,6 +48,8 @@ from sklearn.mixture import GaussianMixture
 
 # features = pd.read_csv('features.csv', delimiter=',') # load the features after creating them
 features = pd.read_csv('./run/guse-training-features.csv', delimiter=',') # use the BERT training features created during word embedding
+# with open('./run/bert_3d.pkl', 'rb') as r:
+#     features = pickle.load(r)
 labels = pd.read_csv("./data/combined-set.csv")["is_suicide"]
 
 # Dimensionality-Reduction Algorithms
@@ -61,39 +64,39 @@ low_dim_features = pca_model.fit_transform(features)
 
 
 # Deep Autoencoder
-encoding_dim = 2
-input_size = 512 # based on embeddings
+# encoding_dim = 2
+# input_size = 512 # based on embeddings
 
-input_df = Input(shape=(input_size,))
-encoded = Dense(encoding_dim, activation = 'relu')(input_df)
-decoded = Dense(512, activation='sigmoid')(encoded)
-autoencoder = Model(input_df, decoded)
+# input_df = Input(shape=(input_size,))
+# encoded = Dense(encoding_dim, activation = 'relu')(input_df)
+# decoded = Dense(512, activation='sigmoid')(encoded)
+# autoencoder = Model(input_df, decoded)
 
-# intermediate result
-encoder = Model(input_df, encoded)
+# # intermediate result
+# encoder = Model(input_df, encoded)
 
-autoencoder.compile(optimizer='adam', loss='mse') # Mean-Squared Error Loss is used
+# autoencoder.compile(optimizer='adam', loss='mse') # Mean-Squared Error Loss is used
 
-autoencoder.summary()
+# autoencoder.summary()
 
-autoencoder.fit(features, features,
-                epochs=3000,
-                batch_size=64,
-                shuffle=True,
-                validation_data=(features, features))
+# autoencoder.fit(features, features,
+#                 epochs=3000,
+#                 batch_size=64,
+#                 shuffle=True,
+#                 validation_data=(features, features))
 
-low_dim_features = encoder.predict(features)
+# low_dim_features = encoder.predict(features)
 
 
 #UMAP
-reducer = umap.UMAP(
-        n_neighbors=45,
-        min_dist=0.7,
-        n_components=2,
-        metric='manhattan'
-    )
+# reducer = umap.UMAP(
+#         n_neighbors=45,
+#         min_dist=0.7,
+#         n_components=2,
+#         metric='manhattan'
+#     )
 
-low_dim_features = reducer.fit_transform(features)
+# low_dim_features = reducer.fit_transform(features)
 
 
 # Clustering Algorithms
@@ -810,4 +813,4 @@ predictions = model_spectral.labels_
 # np.savetxt("probs_temp.csv", probs[:, 1], delimiter=',')
 
 df = pd.DataFrame({"predictions" : predictions, "probs" : probs[:, 1]})
-df.to_csv("./run/prediction_labels.csv", index=False)
+df.to_csv("./run/prediction_clusters.csv", index=False)

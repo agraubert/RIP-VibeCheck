@@ -4,6 +4,7 @@
 
 import numpy as np
 import pandas as pd
+import pickle
 
 import torch
 import transformers as ppb
@@ -44,10 +45,16 @@ def encodeData(messages):
 
   return final_embeddings
 
+
+## These are the two GUSE sets for Aaron
 # transform the text features to word embeddings using GUSE
 training_regular = pd.read_csv('./data/training-set.csv')['selftext']
 new_training_regular = encodeData(training_regular)
 new_training_regular.to_csv('guse-training-features.csv')
+
+training_regular = pd.read_csv('./data/testing-set.csv')['selftext']
+new_training_regular = encodeData(training_regular)
+new_training_regular.to_csv('./run/guse-testing-features.csv')
 
 
 # BERT Transformer
@@ -93,8 +100,7 @@ df = df[['selftext', 'is_suicide']]
 df = df.rename(columns={'selftext': 0, 'is_suicide': 1})
 
 bert_features = getFeatures(df)
-print("Bert shape: ", bert_features.shape)
+# print("Bert shape: ", bert_features.shape)
 # np.savetxt("bert-3d-training-features.csv", bert_features, delimiter=',')
-import pickle
-with open('bert_3d.pkl', 'wb') as w:
+with open('./run/bert_3d.pkl', 'wb') as w:
     pickle.dump(bert_features, w)

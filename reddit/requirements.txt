@@ -1,0 +1,6 @@
+asyncpraw
+aiostream
+pymysql
+sqlalchemy
+pandas
+aiohttp

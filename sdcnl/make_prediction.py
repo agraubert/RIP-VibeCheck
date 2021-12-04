@@ -52,5 +52,5 @@ if __name__ == "__main__":
 
         df = pd.read_csv(args.training)
         pred = pd.read_csv('{}/predictions.csv'.format(tempdir))['0']
-        df['suicide_p'] = pred
+        df['suicide_p'] = pred.values
         df.to_csv(args.training)

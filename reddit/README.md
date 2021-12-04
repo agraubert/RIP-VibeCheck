@@ -18,7 +18,7 @@ destination by creating a class which inherits from
 The provided `MYSQLStream` class is designed to dump
 comments to a MySQL database and flush every 25 comments.
 To facilitate creating your own database, the expected
-schema is available in **FIXME: db.sql**. This class is
+schema is available in [db.sql](https://github.com/agraubert/RIP-VibeCheck/blob/main/reddit/db.sql). This class is
 built on top of [SQLAlchemy](https://www.sqlalchemy.org/)
 so you could alternatively use any SQL-based database.
 `MYSQLStream` expects a URL in [SQLAlchemy URL format](https://docs.sqlalchemy.org/en/14/core/engines.html#database-urls) to provide the necessary
@@ -31,7 +31,7 @@ listed in the project requirements.
 
 This project was tested and run on Python 3.8, but
 should theoretically run on any version of Python 3 >=
-3.6. The list of required packages are in **FIXME: requirements.txt**, which you can install with
+3.6. The list of required packages are in [requirements.txt](https://github.com/agraubert/RIP-VibeCheck/blob/main/reddit/requirements.txt), which you can install with
 `pip install -r requirements.txt`. We highly recommend
 running this within a virtual environment.
 
